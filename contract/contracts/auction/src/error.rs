@@ -24,4 +24,12 @@ pub enum ContractError {
     InvalidAmount(String),
     #[error("invalid asset: {0}")]
     InvalidAsset(String),
+    #[error("Wrong CW20 Fee sent")]
+    InvalidToken {},
+    #[error("Send CW20 tokens")]
+    EmptyBalance {},
+    #[error("Error at {location}")]
+    TracePoint {
+            location: String,
+    },
 }

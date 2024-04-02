@@ -29,7 +29,7 @@ export const BidHistory = ({ bids, connectedWallet } : { bids: HistoricalBid[], 
         </Typography>
       ) : (
         <Box display="flex" flexDirection="column">
-          <Box display="flex" width="100%">
+          <Box display="flex" width={100}>
             <Box flex="1.5">
               <Typography variant="body1">Bidder</Typography>
             </Box>
@@ -41,7 +41,7 @@ export const BidHistory = ({ bids, connectedWallet } : { bids: HistoricalBid[], 
             </Box>
           </Box>
           {bids.map((d) => (
-            <Box display="flex" width="100%" marginTop="13px" key={d.time}>
+            <Box display="flex" width={100} marginTop="13px" key={d.time}>
               <Box flex="1.5">
                 <Typography variant="caption">
                   {

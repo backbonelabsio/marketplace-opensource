@@ -1,17 +1,38 @@
 use cosmwasm_std::{
-    to_binary, Addr, CosmosMsg, Decimal, Deps, DepsMut, Env, MessageInfo, Response, Uint128,
+    to_json_binary,
+    Addr,
+    CosmosMsg,
+    Decimal,
+    Deps,
+    DepsMut,
+    Env,
+    MessageInfo,
+    Response,
+    Uint128,
     WasmMsg,
 };
 use cw721::Cw721ExecuteMsg;
-use marketplace::auction::{AuctionType, Bid, ExecuteMsg, Royalty};
-use terraswap::asset::{Asset, AssetInfo};
+use cw20::{ Balance, Cw20Coin, Cw20CoinVerified, Cw20ExecuteMsg, Cw20ReceiveMsg };
+use marketplace::auction::{ AuctionType, Bid, ExecuteMsg, Royalty };
+use terraswap::asset::{ Asset, AssetInfo };
 
 use crate::error::ContractError;
 use crate::querier::query_nft_owner;
 use crate::state::{
-    Auction, AUCTIONS, AUCTION_ID_BY_AMOUNT, AUCTION_ID_BY_BIDDER, AUCTION_ID_BY_ENDTIME,
-    AUCTION_ID_BY_SELLER, BID_COUNT_BY_AUCTION_ID, BID_HISTORY_BY_AUCTION_ID, CONFIG,
-    NFT_AUCTION_MAPS, NOT_STARTED_AUCTION, ROYALTIES, ROYALTY_ADMINS, STATE,
+    Auction,
+    AUCTIONS,
+    AUCTION_ID_BY_AMOUNT,
+    AUCTION_ID_BY_BIDDER,
+    AUCTION_ID_BY_ENDTIME,
+    AUCTION_ID_BY_SELLER,
+    BID_COUNT_BY_AUCTION_ID,
+    BID_HISTORY_BY_AUCTION_ID,
+    CONFIG,
+    NFT_AUCTION_MAPS,
+    NOT_STARTED_AUCTION,
+    ROYALTIES,
+    ROYALTY_ADMINS,
+    STATE,
 };
 
 // AUCTIONS_MAPPING MODIFICATION
@@ -23,7 +44,7 @@ pub fn create_auction(
     seller: Addr,
     denom: String,
     reserve_price: Uint128,
-    is_instant_sale: bool,
+    is_instant_sale: bool
 ) -> Result<Response, ContractError> {
     // check condition
     let config = CONFIG.load(deps.storage)?;
@@ -38,18 +59,11 @@ pub fn create_auction(
     }
     // check min reserve price
     if reserve_price < config.min_reserve_price {
-        return Err(ContractError::InvalidAmount(
-            "reserve price too low".to_string(),
-        ));
+        return Err(ContractError::InvalidAmount("reserve price too low".to_string()));
     }
     // check additional nft auction mapping
-    if NFT_AUCTION_MAPS
-        .may_load(deps.storage, (&nft_contract, token_id.clone()))?
-        .is_some()
-    {
-        return Err(ContractError::InvalidAuction(
-            "auction is duplicated".to_string(),
-        ));
+    if NFT_AUCTION_MAPS.may_load(deps.storage, (&nft_contract, token_id.clone()))?.is_some() {
+        return Err(ContractError::InvalidAuction("auction is duplicated".to_string()));
     }
 
     // check support royalty
@@ -97,27 +111,21 @@ pub fn create_auction(
     state.next_auction_id += Uint128::from(1u128);
     STATE.save(deps.storage, &state)?;
     // save auction map
-    NFT_AUCTION_MAPS.save(
-        deps.storage,
-        (&nft_contract, token_id.clone()),
-        &auction_id.u128(),
-    )?;
+    NFT_AUCTION_MAPS.save(deps.storage, (&nft_contract, token_id.clone()), &auction_id.u128())?;
     //updating auction indices
     AUCTION_ID_BY_SELLER.save(deps.storage, (&seller, auction_id.u128()), &true)?;
-    NOT_STARTED_AUCTION.save(
-        deps.storage,
-        (&nft_contract, auction.auction_id.u128()),
-        &true,
-    )?;
-    Ok(Response::new()
-        .add_attribute("action", "create_auction")
-        .add_attribute("auction_id", auction_id)
-        .add_attribute("auction_type", format!("{}", auction_type))
-        .add_attribute("nft_contract", nft_contract.to_string())
-        .add_attribute("token_id", token_id)
-        .add_attribute("seller", seller.to_string())
-        .add_attribute("denom", denom)
-        .add_attribute("reserve", reserve_price))
+    NOT_STARTED_AUCTION.save(deps.storage, (&nft_contract, auction.auction_id.u128()), &true)?;
+    Ok(
+        Response::new()
+            .add_attribute("action", "create_auction")
+            .add_attribute("auction_id", auction_id)
+            .add_attribute("auction_type", format!("{}", auction_type))
+            .add_attribute("nft_contract", nft_contract.to_string())
+            .add_attribute("token_id", token_id)
+            .add_attribute("seller", seller.to_string())
+            .add_attribute("denom", denom)
+            .add_attribute("reserve", reserve_price)
+    )
 }
 
 // JUST ROYALTY MODIFICATION
@@ -127,7 +135,7 @@ pub fn set_royalty_fee(
     info: MessageInfo,
     contract_addr: String,
     creator: String,
-    royalty_fee: Decimal,
+    royalty_fee: Decimal
 ) -> Result<Response, ContractError> {
     only_royalty_admin(deps.as_ref(), &env, info)?;
     let config = CONFIG.load(deps.storage)?;
@@ -141,11 +149,13 @@ pub fn set_royalty_fee(
         return Err(ContractError::InvalidRoyaltyFee {});
     }
     ROYALTIES.save(deps.storage, &nft_contract_addr, &royalty)?;
-    Ok(Response::new()
-        .add_attribute("action", "set_royalty_fee")
-        .add_attribute("nft_contract", contract_addr)
-        .add_attribute("creator", creator)
-        .add_attribute("royalty_fee", royalty_fee.to_string()))
+    Ok(
+        Response::new()
+            .add_attribute("action", "set_royalty_fee")
+            .add_attribute("nft_contract", contract_addr)
+            .add_attribute("creator", creator)
+            .add_attribute("royalty_fee", royalty_fee.to_string())
+    )
 }
 
 // ROYALTY ADMIN MODIFICATION
@@ -154,7 +164,7 @@ pub fn set_royalty_admin(
     env: Env,
     info: MessageInfo,
     address: String,
-    enable: bool,
+    enable: bool
 ) -> Result<Response, ContractError> {
     only_owner(deps.as_ref(), &env, info)?;
 
@@ -165,10 +175,12 @@ pub fn set_royalty_admin(
         ROYALTY_ADMINS.remove(deps.storage, &address_raw);
     }
 
-    Ok(Response::new()
-        .add_attribute("action", "set_royalty_admin")
-        .add_attribute("address", address)
-        .add_attribute("enable", enable.to_string()))
+    Ok(
+        Response::new()
+            .add_attribute("action", "set_royalty_admin")
+            .add_attribute("address", address)
+            .add_attribute("enable", enable.to_string())
+    )
 }
 
 // ADAPTER TO CALL CANCEL AUCTION
@@ -176,7 +188,7 @@ pub fn cancel_auction(
     deps: DepsMut,
     env: Env,
     info: MessageInfo,
-    auction_id: Uint128,
+    auction_id: Uint128
 ) -> Result<Response, ContractError> {
     // check auction owner
     check_auction_owner(deps.as_ref(), &env, info, auction_id)?;
@@ -186,33 +198,43 @@ pub fn cancel_auction(
     match auction.auction_type {
         AuctionType::BuyNow => {
             messages.extend(_cancel_auction(deps, env.clone(), auction_id)?);
-            messages.push(CosmosMsg::Wasm(WasmMsg::Execute {
-                contract_addr: env.contract.address.to_string(),
-                msg: to_binary(&ExecuteMsg::SettleHook {
-                    nft_contract: auction.nft_contract.to_string(),
-                    token_id: auction.token_id.clone(),
-                    owner: auction.seller.to_string(),
-                })?,
-                funds: vec![],
-            }));
+            messages.push(
+                CosmosMsg::Wasm(WasmMsg::Execute {
+                    contract_addr: env.contract.address.to_string(),
+                    msg: to_json_binary(
+                        &(ExecuteMsg::SettleHook {
+                            nft_contract: auction.nft_contract.to_string(),
+                            token_id: auction.token_id.clone(),
+                            owner: auction.seller.to_string(),
+                        })
+                    )?,
+                    funds: vec![],
+                })
+            );
         }
         AuctionType::Auction => {
             messages.extend(_cancel_auction(deps, env.clone(), auction_id)?);
-            messages.push(CosmosMsg::Wasm(WasmMsg::Execute {
-                contract_addr: env.contract.address.to_string(),
-                msg: to_binary(&ExecuteMsg::SettleHook {
-                    nft_contract: auction.nft_contract.to_string(),
-                    token_id: auction.token_id.clone(),
-                    owner: auction.seller.to_string(),
-                })?,
-                funds: vec![],
-            }));
+            messages.push(
+                CosmosMsg::Wasm(WasmMsg::Execute {
+                    contract_addr: env.contract.address.to_string(),
+                    msg: to_json_binary(
+                        &(ExecuteMsg::SettleHook {
+                            nft_contract: auction.nft_contract.to_string(),
+                            token_id: auction.token_id.clone(),
+                            owner: auction.seller.to_string(),
+                        })
+                    )?,
+                    funds: vec![],
+                })
+            );
         }
     }
-    Ok(Response::new()
-        .add_messages(messages)
-        .add_attribute("action", "cancel_auction")
-        .add_attribute("auction_id", auction_id))
+    Ok(
+        Response::new()
+            .add_messages(messages)
+            .add_attribute("action", "cancel_auction")
+            .add_attribute("auction_id", auction_id)
+    )
 }
 
 pub fn place_bid(
@@ -220,6 +242,7 @@ pub fn place_bid(
     env: Env,
     info: MessageInfo,
     auction_id: Uint128,
+    cw_balance: Option<Balance>
 ) -> Result<Response, ContractError> {
     // retrieve config
     let config = CONFIG.load(deps.storage)?;
@@ -228,23 +251,46 @@ pub fn place_bid(
     if state.is_freeze {
         return Err(ContractError::AuctionFreeze {});
     }
-    if info.funds.len() > 1 {
-        return Err(ContractError::InvalidAmount(
-            "sent fund in multiple denom".to_string(),
-        ));
-    }
-    // retrieve auction
+
+    // retrieve auction, check if already settled
     let mut auction = AUCTIONS.load(deps.storage, auction_id.u128())?;
     if auction.is_settled {
         return Err(ContractError::InvalidAuction("already settled".to_string()));
     }
-    // call place bid
-    let bid_amount: Uint128 = info
-        .funds
-        .iter()
-        .find(|c| c.denom == auction.denom)
-        .map(|c| c.amount)
-        .unwrap_or_else(Uint128::zero);
+
+    //initialize some variables
+    let mut is_native = true;
+    let mut bid_amount: Uint128 = Uint128::zero();
+    let (mut denom, mut amount);
+
+    // Check if funds in is native or cw20
+    if info.funds.len() > 1 {
+        //only one native denom is allowed
+        return Err(
+            ContractError::InvalidAmount("sent funds in multiple native denoms".to_string())
+        );
+    } else if info.funds.len() == 0 {
+        //funds is cw20 token
+        is_native = false;
+        // Determine the denom and amount from the incoming CW20 token balance
+        (denom, amount) = match &cw_balance {
+            Some(Balance::Cw20(token)) => (token.address.to_string(), token.amount),
+            _ => unreachable!(), // This branch should never be reached if there's a CW20 balance
+        };
+        if denom != auction.denom {
+            // ensure correct denom sent
+            return Err(ContractError::InvalidAsset("CW20 denom is incorrect".to_string()));
+        }
+        bid_amount = amount.clone();
+    } else {
+        // funds are native token
+        bid_amount = info.funds
+            .iter()
+            .find(|c| c.denom == auction.denom)
+            .map(|c| c.amount)
+            .ok_or_else(|| ContractError::InvalidAsset("Native denom is incorrect".to_string()))?;
+    }
+
     //check time
     let block_time = env.block.time.seconds();
     let mut messages: Vec<CosmosMsg> = vec![];
@@ -262,14 +308,14 @@ pub fn place_bid(
     match auction.auction_type {
         AuctionType::BuyNow => {
             if auction.end_time > 0 {
-                return Err(ContractError::InvalidAuction(
-                    "already place bid".to_string(),
-                ));
+                return Err(ContractError::InvalidAuction("already placed bid".to_string()));
             }
             if bid_amount != auction.amount {
-                return Err(ContractError::InvalidAmount(
-                    "bid amount is less than reserve price".to_string(),
-                ));
+                return Err(
+                    ContractError::InvalidAmount(
+                        "bid amount is less than reserve price".to_string()
+                    )
+                );
             }
             auction.bidder = Some(info.sender.clone());
             auction.end_time = env.block.time.seconds();
@@ -280,9 +326,11 @@ pub fn place_bid(
                 // first bid - precondition
                 // check that fund is in accepted denom and greater than reserve price
                 if bid_amount < auction.reserve_price {
-                    return Err(ContractError::InvalidAmount(
-                        "bid amount is less than reserve price".to_string(),
-                    ));
+                    return Err(
+                        ContractError::InvalidAmount(
+                            "bid amount is less than reserve price".to_string()
+                        )
+                    );
                 }
                 // first bid - action
                 let end_time = block_time + auction.duration;
@@ -294,37 +342,29 @@ pub fn place_bid(
                 BID_COUNT_BY_AUCTION_ID.save(
                     deps.storage,
                     auction.auction_id.u128(),
-                    &Uint128::from(1u128),
+                    &Uint128::from(1u128)
                 )?;
                 BID_HISTORY_BY_AUCTION_ID.save(
                     deps.storage,
                     (auction.auction_id.u128(), 1),
-                    &bid_history,
+                    &bid_history
                 )?;
                 //updating indexing storage
                 AUCTION_ID_BY_ENDTIME.save(
                     deps.storage,
-                    (
-                        &auction.nft_contract,
-                        auction.end_time,
-                        auction.auction_id.u128(),
-                    ),
-                    &true,
+                    (&auction.nft_contract, auction.end_time, auction.auction_id.u128()),
+                    &true
                 )?;
 
                 AUCTION_ID_BY_AMOUNT.save(
                     deps.storage,
-                    (
-                        &auction.nft_contract,
-                        auction.amount.u128(),
-                        auction.auction_id.u128(),
-                    ),
-                    &true,
+                    (&auction.nft_contract, auction.amount.u128(), auction.auction_id.u128()),
+                    &true
                 )?;
                 AUCTION_ID_BY_BIDDER.save(
                     deps.storage,
                     (&bidder, auction.auction_id.u128()),
-                    &true,
+                    &true
                 )?;
                 // add bidder
             } else {
@@ -333,27 +373,27 @@ pub fn place_bid(
                 let last_bidder;
                 if block_time > auction.end_time {
                     return Err(ContractError::InvalidAuction("auction is over".to_string()));
-                };
+                }
                 match auction.bidder {
                     Some(v) => {
                         last_bidder = v;
                         if last_bidder == bidder {
-                            return Err(ContractError::InvalidAuction(
-                                "you already outbid".to_string(),
-                            ));
+                            return Err(
+                                ContractError::InvalidAuction("you already outbid".to_string())
+                            );
                         }
                     }
                     None => {
                         return Err(ContractError::InvalidAuction("unknown bidder".to_string()));
                     }
-                };
+                }
 
-                let min_bid_amount =
-                    calculate_min_bid_amount(config.min_increment, auction.amount)?;
+                let min_bid_amount = calculate_min_bid_amount(
+                    config.min_increment,
+                    auction.amount
+                )?;
                 if bid_amount < min_bid_amount {
-                    return Err(ContractError::InvalidAmount(
-                        "bid amount too low".to_string(),
-                    ));
+                    return Err(ContractError::InvalidAmount("bid amount too low".to_string()));
                 }
                 // action
                 let last_amount = auction.amount;
@@ -368,97 +408,103 @@ pub fn place_bid(
                 }
 
                 // add to bid history
-                let bid_count = BID_COUNT_BY_AUCTION_ID
-                    .load(deps.storage, auction.auction_id.u128())?
-                    + Uint128::from(1u128);
+                let bid_count =
+                    BID_COUNT_BY_AUCTION_ID.load(deps.storage, auction.auction_id.u128())? +
+                    Uint128::from(1u128);
                 BID_COUNT_BY_AUCTION_ID.save(
                     deps.storage,
                     auction.auction_id.u128(),
-                    &Uint128::from(bid_count),
+                    &Uint128::from(bid_count)
                 )?;
                 BID_HISTORY_BY_AUCTION_ID.save(
                     deps.storage,
                     (auction.auction_id.u128(), bid_count.u128()),
-                    &bid_history,
+                    &bid_history
                 )?;
                 //remove old endtime and add new
-                AUCTION_ID_BY_ENDTIME.remove(
-                    deps.storage,
-                    (
-                        &auction.nft_contract,
-                        last_endtime,
-                        auction.auction_id.u128(),
-                    ),
-                );
+                AUCTION_ID_BY_ENDTIME.remove(deps.storage, (
+                    &auction.nft_contract,
+                    last_endtime,
+                    auction.auction_id.u128(),
+                ));
                 AUCTION_ID_BY_ENDTIME.save(
                     deps.storage,
-                    (
-                        &auction.nft_contract,
-                        auction.end_time,
-                        auction.auction_id.u128(),
-                    ),
-                    &true,
+                    (&auction.nft_contract, auction.end_time, auction.auction_id.u128()),
+                    &true
                 )?;
 
-                AUCTION_ID_BY_AMOUNT.remove(
-                    deps.storage,
-                    (
-                        &auction.nft_contract,
-                        last_amount.u128(),
-                        auction.auction_id.u128(),
-                    ),
-                );
+                AUCTION_ID_BY_AMOUNT.remove(deps.storage, (
+                    &auction.nft_contract,
+                    last_amount.u128(),
+                    auction.auction_id.u128(),
+                ));
                 AUCTION_ID_BY_AMOUNT.save(
                     deps.storage,
-                    (
-                        &auction.nft_contract,
-                        auction.amount.u128(),
-                        auction.auction_id.u128(),
-                    ),
-                    &true,
+                    (&auction.nft_contract, auction.amount.u128(), auction.auction_id.u128()),
+                    &true
                 )?;
 
-                AUCTION_ID_BY_BIDDER
-                    .remove(deps.storage, (&last_bidder, auction.auction_id.u128()));
+                AUCTION_ID_BY_BIDDER.remove(deps.storage, (
+                    &last_bidder,
+                    auction.auction_id.u128(),
+                ));
                 AUCTION_ID_BY_BIDDER.save(
                     deps.storage,
                     (&bidder, auction.auction_id.u128()),
-                    &true,
+                    &true
                 )?;
+                if is_native == true {
+                    //for native tokens
+                    let refund_asset: Asset = Asset {
+                        info: AssetInfo::NativeToken {
+                            denom: auction.denom.clone(),
+                        },
+                        amount: last_amount,
+                    };
+                    messages.push(refund_asset.into_msg(last_bidder)?);
+                } else {
+                    //for cw20 tokens
+                    // Construct the execute message to send the transfer
+                    let execute_msg = Cw20ExecuteMsg::Transfer {
+                        recipient: last_bidder.to_string(), // Recipient address
+                        amount: last_amount, // Amount of CW20 tokens to send
+                    };
 
-                let refund_asset: Asset = Asset {
-                    info: AssetInfo::NativeToken {
-                        denom: auction.denom.clone(),
-                    },
-                    amount: last_amount,
-                };
-                messages.push(refund_asset.into_msg(last_bidder)?);
+                    // Construct the CosmosMsg to execute the CW20 transfer
+                    let transfer_cosmos_msg = CosmosMsg::Wasm(WasmMsg::Execute {
+                        contract_addr: auction.denom.clone(), // CW20 contract address
+                        msg: to_json_binary(&execute_msg)?, // Convert the execute message to binary
+                        funds: vec![], // No funds required for CW20 transfer
+                    });
+
+                    // Add the CW20 transfer CosmosMsg to the messages vector
+                    messages.push(transfer_cosmos_msg);
+                }
             }
         }
     }
 
     // update auction
-    NOT_STARTED_AUCTION.remove(
-        deps.storage,
-        (&auction.nft_contract, auction.auction_id.u128()),
-    );
+    NOT_STARTED_AUCTION.remove(deps.storage, (&auction.nft_contract, auction.auction_id.u128()));
     AUCTIONS.save(deps.storage, auction_id.u128(), &auction)?;
 
     // send fund back
-    Ok(Response::new()
-        .add_messages(messages)
-        .add_attribute("action", "place_bid")
-        .add_attribute("auction_id", auction_id)
-        .add_attribute("bidder", info.sender.to_string())
-        .add_attribute("bid_amount", bid_amount)
-        .add_attribute("nft_contract", auction.nft_contract)
-        .add_attribute("token_id", auction.token_id))
+    Ok(
+        Response::new()
+            .add_messages(messages)
+            .add_attribute("action", "place_bid")
+            .add_attribute("auction_id", auction_id)
+            .add_attribute("bidder", info.sender.to_string())
+            .add_attribute("bid_amount", bid_amount)
+            .add_attribute("nft_contract", auction.nft_contract)
+            .add_attribute("token_id", auction.token_id)
+    )
 }
 
 pub fn settle_auction(
     deps: DepsMut,
     env: Env,
-    auction_id: Uint128,
+    auction_id: Uint128
 ) -> Result<Response, ContractError> {
     // retrieve config
     let config = CONFIG.load(deps.storage)?;
@@ -466,117 +512,184 @@ pub fn settle_auction(
     let mut auction = AUCTIONS.load(deps.storage, auction_id.u128())?;
     if auction.is_settled {
         return Err(ContractError::InvalidAuction("already settled".to_string()));
-    };
+    }
     if env.block.time.seconds() < auction.end_time {
-        return Err(ContractError::InvalidAuction(
-            "auction is not end".to_string(),
-        ));
-    };
+        return Err(ContractError::InvalidAuction("auction has not ended".to_string()));
+    }
+
+    // Check if the denom represents a CW20 token or a native Terra token
+    let mut is_native = true;
+    if auction.denom.starts_with("terra") {
+        is_native = false;
+    }
+
     // distribute fund
     let mut messages: Vec<CosmosMsg> = vec![];
     let protocol_fee = calculate_fee(config.protocol_fee, auction.amount)?;
     let royalty_fee = calculate_fee(auction.royalty_fee, auction.amount)?;
     let seller_amount = auction.amount - (protocol_fee + royalty_fee);
-    // protocol fee
-    if protocol_fee > Uint128::zero() {
-        let protocol_asset = Asset {
-            info: AssetInfo::NativeToken {
+    
+    if is_native == true { // Construct messages for native tokens
+    
+        // protocol fee
+        if protocol_fee > Uint128::zero(){
+            let protocol_asset = Asset {
+                info: AssetInfo::NativeToken {
                 denom: auction.denom.clone(),
             },
-            amount: protocol_fee,
-        };
-        messages.push(protocol_asset.into_msg(config.collector_address)?);
-    }
-    // royalty
-    if royalty_fee > Uint128::zero() {
-        let royalty_asset = Asset {
-            info: AssetInfo::NativeToken {
+                amount: protocol_fee,
+            };
+            messages.push(protocol_asset.into_msg(config.collector_address)?);
+        }
+    
+        // royalty
+        if royalty_fee > Uint128::zero() {
+            let royalty_asset = Asset {
+                info: AssetInfo::NativeToken {
                 denom: auction.denom.clone(),
             },
-            amount: royalty_fee,
-        };
-        match auction.creator_address.clone() {
+                amount: royalty_fee,
+            };
+            match auction.creator_address.clone() {
             Some(v) => {
                 messages.push(royalty_asset.into_msg(v)?);
             }
             None => {
-                return Err(ContractError::InvalidAuction(
-                    "creator address is not set".to_string(),
-                ));
+                return Err(ContractError::InvalidAuction("creator address is not set".to_string()));
             }
-        };
-    }
-    // seller
-    let seller_asset = Asset {
-        info: AssetInfo::NativeToken {
+            };
+        }
+    
+        // seller
+        let seller_asset = Asset {
+            info: AssetInfo::NativeToken {
             denom: auction.denom.clone(),
         },
-        amount: seller_amount,
-    };
-    messages.push(seller_asset.into_msg(auction.seller.clone())?);
+            amount: seller_amount,
+        };
+        messages.push(seller_asset.into_msg(auction.seller.clone())?);
+    
+    } else { // Construct messages for CW20 tokens
+    
+        // protocol fee
+        if protocol_fee > Uint128::zero(){
+            let protocol_fee_msg = WasmMsg::Execute {
+                contract_addr: auction.denom.clone(),
+                msg: to_json_binary(
+                    &(Cw20ExecuteMsg::Transfer {
+                        recipient: config.collector_address.into(),
+                        amount: protocol_fee,
+                    })
+                )?,
+                funds: vec![],
+            };
+            messages.push(CosmosMsg::Wasm(protocol_fee_msg));
+        }
+
+        // royalty
+        if royalty_fee > Uint128::zero() {
+            let royalty_fee_msg = WasmMsg::Execute {
+                contract_addr: auction.denom.clone(),
+                msg: to_json_binary(
+                    &(Cw20ExecuteMsg::Transfer {
+                        recipient: auction.creator_address.clone().unwrap().into(),
+                        amount: royalty_fee,
+                    })
+                )?,
+                funds: vec![],
+            }; 
+            
+            match auction.creator_address.clone() {
+                Some(v) => {
+                    messages.push(CosmosMsg::Wasm(royalty_fee_msg));
+                }
+                None => {
+                    return Err(ContractError::InvalidAuction("creator address is not set".to_string()));
+                }
+            };
+        }
+       
+        // seller
+        let seller_asset_msg = WasmMsg::Execute {
+            contract_addr: auction.denom.clone(),
+            msg: to_json_binary(
+                &(Cw20ExecuteMsg::Transfer {
+                    recipient: auction.seller.clone().into(),
+                    amount: seller_amount,
+                })
+            )?,
+            funds: vec![],
+        };
+        messages.push(CosmosMsg::Wasm(seller_asset_msg));
+   
+     }
+
     // send nft to bidder
     let bidder = match &auction.bidder {
         Some(v) => v.clone(),
-        None => return Err(ContractError::InvalidAuction("invalid bidder".to_string())),
+        None => {
+            return Err(ContractError::InvalidAuction("invalid bidder".to_string()));
+        }
     };
-    messages.push(CosmosMsg::Wasm(WasmMsg::Execute {
-        contract_addr: auction.nft_contract.to_string(),
-        msg: to_binary(&Cw721ExecuteMsg::TransferNft {
-            token_id: auction.token_id.clone(),
-            recipient: bidder.to_string(),
-        })?,
-        funds: vec![],
-    }));
+    messages.push(
+        CosmosMsg::Wasm(WasmMsg::Execute {
+            contract_addr: auction.nft_contract.to_string(),
+            msg: to_json_binary(
+                &(Cw721ExecuteMsg::TransferNft {
+                    token_id: auction.token_id.clone(),
+                    recipient: bidder.to_string(),
+                })
+            )?,
+            funds: vec![],
+        })
+    );
     // need additional message to check post condition (ex. bidder is now owner of nft) to prevent malicious nft contract
-    messages.push(CosmosMsg::Wasm(WasmMsg::Execute {
-        contract_addr: env.contract.address.to_string(),
-        msg: to_binary(&ExecuteMsg::SettleHook {
-            nft_contract: auction.nft_contract.to_string(),
-            token_id: auction.token_id.clone(),
-            owner: bidder.to_string(),
-        })?,
-        funds: vec![],
-    }));
+    messages.push(
+        CosmosMsg::Wasm(WasmMsg::Execute {
+            contract_addr: env.contract.address.to_string(),
+            msg: to_json_binary(
+                &(ExecuteMsg::SettleHook {
+                    nft_contract: auction.nft_contract.to_string(),
+                    token_id: auction.token_id.clone(),
+                    owner: bidder.to_string(),
+                })
+            )?,
+            funds: vec![],
+        })
+    );
     // save auction
     auction.is_settled = true;
     AUCTIONS.save(deps.storage, auction_id.u128(), &auction)?;
 
     // remove auction and auction index from mapping
-    NFT_AUCTION_MAPS.remove(
-        deps.storage,
-        (&auction.nft_contract, auction.token_id.clone()),
-    );
+    NFT_AUCTION_MAPS.remove(deps.storage, (&auction.nft_contract, auction.token_id.clone()));
     AUCTION_ID_BY_SELLER.remove(deps.storage, (&auction.seller, auction.auction_id.u128()));
 
     if auction.auction_type == AuctionType::Auction {
-        AUCTION_ID_BY_ENDTIME.remove(
-            deps.storage,
-            (
-                &auction.nft_contract,
-                auction.end_time,
-                auction.auction_id.u128(),
-            ),
-        );
-        AUCTION_ID_BY_AMOUNT.remove(
-            deps.storage,
-            (
-                &auction.nft_contract,
-                auction.amount.u128(),
-                auction_id.u128(),
-            ),
-        );
+        AUCTION_ID_BY_ENDTIME.remove(deps.storage, (
+            &auction.nft_contract,
+            auction.end_time,
+            auction.auction_id.u128(),
+        ));
+        AUCTION_ID_BY_AMOUNT.remove(deps.storage, (
+            &auction.nft_contract,
+            auction.amount.u128(),
+            auction_id.u128(),
+        ));
         AUCTION_ID_BY_BIDDER.remove(deps.storage, (&bidder, auction.auction_id.u128()));
     }
     // remove auction from bidder
-    Ok(Response::new()
-        .add_messages(messages)
-        .add_attribute("action", "settle")
-        .add_attribute("auction_id", auction_id)
-        .add_attribute("nft_contract", auction.nft_contract)
-        .add_attribute("token_id", auction.token_id)
-        .add_attribute("denom", auction.denom)
-        .add_attribute("amount", auction.amount)
-        .add_attribute("seller", auction.seller))
+    Ok(
+        Response::new()
+            .add_messages(messages)
+            .add_attribute("action", "settle")
+            .add_attribute("auction_id", auction_id)
+            .add_attribute("nft_contract", auction.nft_contract)
+            .add_attribute("token_id", auction.token_id)
+            .add_attribute("denom", auction.denom)
+            .add_attribute("amount", auction.amount)
+            .add_attribute("seller", auction.seller)
+    )
 }
 
 pub fn settle_hook(
@@ -585,7 +698,7 @@ pub fn settle_hook(
     info: MessageInfo,
     nft_contract: String,
     token_id: String,
-    owner: String,
+    owner: String
 ) -> Result<Response, ContractError> {
     if info.sender != env.contract.address {
         return Err(ContractError::Unauthorized {});
@@ -604,7 +717,7 @@ pub fn admin_cancel_auction(
     deps: DepsMut,
     env: Env,
     info: MessageInfo,
-    auction_id: Uint128,
+    auction_id: Uint128
 ) -> Result<Response, ContractError> {
     // check owner
     only_owner(deps.as_ref(), &env, info)?;
@@ -620,10 +733,12 @@ pub fn admin_cancel_auction(
         }
     }
 
-    Ok(Response::new()
-        .add_messages(messages)
-        .add_attribute("action", "admin_cancel_auction")
-        .add_attribute("auction_id", auction_id))
+    Ok(
+        Response::new()
+            .add_messages(messages)
+            .add_attribute("action", "admin_cancel_auction")
+            .add_attribute("auction_id", auction_id)
+    )
 }
 
 pub fn admin_pause(deps: DepsMut, env: Env, info: MessageInfo) -> Result<Response, ContractError> {
@@ -657,7 +772,7 @@ pub fn admin_change_config(
     duration: u64,
     extension_duration: u64,
     accepted_denom: Vec<String>,
-    collector_address: String,
+    collector_address: String
 ) -> Result<Response, ContractError> {
     // check only owner
     only_owner(deps.as_ref(), &env, info)?;
@@ -677,11 +792,10 @@ pub fn admin_change_config(
     Ok(Response::new().add_attribute("action", "admin_change_config"))
 }
 
-
 fn _cancel_auction(
     deps: DepsMut,
     _env: Env,
-    auction_id: Uint128,
+    auction_id: Uint128
 ) -> Result<Vec<CosmosMsg>, ContractError> {
     // send nft back to seller
     let auction = AUCTIONS.load(deps.storage, auction_id.u128())?;
@@ -692,53 +806,47 @@ fn _cancel_auction(
     }
     // implement fund return part
     // return nft back to seller
-    messages.push(CosmosMsg::Wasm(WasmMsg::Execute {
-        contract_addr: auction.nft_contract.to_string(),
-        msg: to_binary(&Cw721ExecuteMsg::TransferNft {
-            token_id: auction.token_id.clone(),
-            recipient: auction.seller.to_string(),
-        })?,
-        funds: vec![],
-    }));
+    messages.push(
+        CosmosMsg::Wasm(WasmMsg::Execute {
+            contract_addr: auction.nft_contract.to_string(),
+            msg: to_json_binary(
+                &(Cw721ExecuteMsg::TransferNft {
+                    token_id: auction.token_id.clone(),
+                    recipient: auction.seller.to_string(),
+                })
+            )?,
+            funds: vec![],
+        })
+    );
     // need additional message to check post condition (ex. seller is now owner of nft) to prevent malicious nft contract
     AUCTIONS.remove(deps.storage, auction_id.u128());
     // remove from mapping
-    NFT_AUCTION_MAPS.remove(
-        deps.storage,
-        (&auction.nft_contract, auction.token_id.clone()),
-    );
+    NFT_AUCTION_MAPS.remove(deps.storage, (&auction.nft_contract, auction.token_id.clone()));
     AUCTION_ID_BY_SELLER.remove(deps.storage, (&auction.seller, auction.auction_id.u128()));
-    NOT_STARTED_AUCTION.remove(
-        deps.storage,
-        (&auction.nft_contract, auction.auction_id.u128()),
-    );
+    NOT_STARTED_AUCTION.remove(deps.storage, (&auction.nft_contract, auction.auction_id.u128()));
 
     Ok(messages)
 }
-
 
 // NO MODIFICATION ON AUCTION
 pub fn check_auction_owner(
     deps: Deps,
     _env: &Env,
     info: MessageInfo,
-    auction_id: Uint128,
+    auction_id: Uint128
 ) -> Result<bool, ContractError> {
     // retrieve auction
     let auction = AUCTIONS.load(deps.storage, auction_id.u128())?;
     // check that sender is the owner of the auction
     if info.sender != auction.seller {
         return Err(ContractError::Unauthorized {});
-    };
+    }
     // check that auction is not started
     if auction.end_time > 0 {
-        return Err(ContractError::InvalidAuction(
-            "auction is already started".to_string(),
-        ));
-    };
+        return Err(ContractError::InvalidAuction("auction is already started".to_string()));
+    }
     Ok(true)
 }
-
 
 // MODIFIER ON SC OWNER
 pub fn only_owner(deps: Deps, _env: &Env, info: MessageInfo) -> Result<bool, ContractError> {
@@ -752,7 +860,7 @@ pub fn only_owner(deps: Deps, _env: &Env, info: MessageInfo) -> Result<bool, Con
 pub fn only_royalty_admin(
     deps: Deps,
     _env: &Env,
-    info: MessageInfo,
+    info: MessageInfo
 ) -> Result<bool, ContractError> {
     let sender = info.sender;
     let royalty_admin_response = ROYALTY_ADMINS.may_load(deps.storage, &sender)?;
@@ -765,7 +873,7 @@ pub fn only_royalty_admin(
 //UTIL
 pub fn calculate_min_bid_amount(
     min_increment: Decimal,
-    amount: Uint128,
+    amount: Uint128
 ) -> Result<Uint128, ContractError> {
     let multiplier: Decimal = Decimal::one() + min_increment;
     let min_bid_amount = amount * multiplier;

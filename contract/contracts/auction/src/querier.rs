@@ -1,4 +1,4 @@
-use cosmwasm_std::{to_binary, Addr, Deps, Order, QueryRequest, StdResult, Uint128, WasmQuery};
+use cosmwasm_std::{to_json_binary, Addr, Deps, Order, QueryRequest, StdResult, Uint128, WasmQuery};
 use cw721::{Cw721QueryMsg, OwnerOfResponse};
 use cw_storage_plus::Bound;
 use cw_utils::maybe_addr;
@@ -44,7 +44,7 @@ pub fn query_nft_owner(deps: Deps, nft_contract: String, token_id: String) -> St
     let owner_response: OwnerOfResponse =
         deps.querier.query(&QueryRequest::Wasm(WasmQuery::Smart {
             contract_addr: nft_contract,
-            msg: to_binary(&Cw721QueryMsg::OwnerOf {
+            msg: to_json_binary(&Cw721QueryMsg::OwnerOf {
                 token_id,
                 include_expired: None,
             })?,

@@ -1,6 +1,6 @@
 use cosmwasm_std::testing::{MockApi, MockQuerier, MockStorage, MOCK_CONTRACT_ADDR};
 use cosmwasm_std::{
-    from_binary, from_slice, to_binary, Addr, Api, Coin, ContractResult, Decimal, Empty, OwnedDeps,
+    from_binary, from_slice, to_json_binary, Addr, Api, Coin, ContractResult, Decimal, Empty, OwnedDeps,
     Querier, QuerierResult, QueryRequest, SystemError, SystemResult, Uint128, WasmQuery,
 };
 use cw721::{Cw721QueryMsg, OwnerOfResponse};
@@ -66,7 +66,7 @@ impl WasmMockQuerier {
                         let nft_owners = self.nft_querier.owners.get(contract_addr).unwrap();
                         let owner = nft_owners.get(&token_id).unwrap();
                         SystemResult::Ok(ContractResult::Ok(
-                            to_binary(&OwnerOfResponse {
+                            to_json_binary(&OwnerOfResponse {
                                 owner: owner.clone(),
                                 approvals: vec![],
                             })

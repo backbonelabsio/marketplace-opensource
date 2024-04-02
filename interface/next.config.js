@@ -11,7 +11,7 @@ module.exports = withBundleAnalyzer({
   webpack: (config, { webpack }) => {
     config.plugins = config.plugins || []
 
-    config.plugins.push(new webpack.IgnorePlugin(/^\.\/locale$/, /moment$/))
+    //config.plugins.push(new webpack.IgnorePlugin(/^\.\/locale$/, /moment$/))
 
     config.plugins.push(
       new MomentTimezoneDataPlugin({

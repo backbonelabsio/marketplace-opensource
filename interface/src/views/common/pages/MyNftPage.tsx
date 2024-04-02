@@ -14,8 +14,9 @@ import {
   useQueryMyWaitingNft,
 } from 'hooks/useMyNft'
 import { useConnectedWallet } from '@terra-money/wallet-provider'
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { faExternalLinkAlt } from '@fortawesome/free-solid-svg-icons'
+import { faExternalLinkAlt} from '@fortawesome/free-solid-svg-icons';
+import { IconProp } from '@fortawesome/fontawesome-svg-core';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { useResultPolling } from 'hooks/contract/useResultPolling'
 import { KnowhereTab, KnowhereTabs, TabPanel } from '../KnowhereTab'
 import { EmptyState } from '../EmptyState'
@@ -41,6 +42,7 @@ const NftButton = ({
   const readyToSettle = auctionState === 'ready_for_settlement'
   const isSettled = 'is_settled' in nft ? nft?.is_settled : false
   const isListing = auctionState === 'not_started' || auctionState === 'bidding'
+  const iconProp: IconProp = ['fas', 'external-link-alt'];
 
   const { delist } = useExecuteService()
   const { showTxSubmitted, pollTxInfo } = useResultPolling()
@@ -66,6 +68,7 @@ const NftButton = ({
     }
   }
 
+  
   const renderButtonFromState = () => {
     if (isSettled) {
       return (
@@ -106,7 +109,7 @@ const NftButton = ({
             onClick={goToAuction}
           >
             <Box style={{ marginTop: '-10px' }}>
-              <FontAwesomeIcon icon={faExternalLinkAlt} />
+            <FontAwesomeIcon icon={iconProp} />
             </Box>
           </button>
           <button
@@ -159,7 +162,7 @@ const NftCard = ({ nft }: { nft: Nft | AuctionNft }) => {
       display="flex"
       flexDirection="column"
       borderRadius="30px"
-      height="100%"
+      height={100}
       overflow="hidden"
       className={`${rarityName}`}
     >

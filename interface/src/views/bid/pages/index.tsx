@@ -184,7 +184,7 @@ export const BidPage = () => {
           style={{ filter: 'drop-shadow(0px 5px 20px rgba(73, 155, 231, 0.2))' }}
         >
           <Box className={`large`}>
-            <Image src={formatImageURL(nft?.extension?.image)} alt="NFT" width="100%" height="100%" layout="responsive" />
+          <Image src={formatImageURL(nft?.extension?.image)} alt="NFT" width={100} height={100} layout="responsive" />
           </Box>
         </Box>
         <Box width="40%" paddingLeft="15px">

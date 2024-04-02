@@ -261,9 +261,9 @@ export const MarketPage = () => {
           <KnowhereTab value={TabValue.NFT} label="NFT" />
         </KnowhereTabs>
       </Box>
-      <Box display="flex" flexDirection="column" width="100%" alignItems="center" mt={2}>
+      <Box display="flex" flexDirection="column" width={100} alignItems="center" mt={2}>
         <TabPanel value={value} index={TabValue.NFT}>
-          <Box display="flex" width="100%" justifyContent="space-between">
+          <Box display="flex" width={100} justifyContent="space-between">
             <Box display="flex" alignItems="flex-end" mb={1}>
               <Typography variant="h3" lineHeight="100%">
                 In Progress
@@ -323,7 +323,7 @@ export const MarketPage = () => {
             />
           </Box>
           <Divider />
-          <Box display="flex" width="100%" justifyContent="space-between">
+          <Box display="flex" width={100} justifyContent="space-between">
             <Box display="flex" alignItems="flex-end" mb={2}>
               <Typography variant="h3" lineHeight="100%">
                 Not Started
@@ -383,7 +383,7 @@ export const MarketPage = () => {
             />
           </Box>
           <Divider />
-          {/* <Box display="flex" width="100%" justifyContent="space-between">
+          {/* <Box display="flex" width={100} justifyContent="space-between">
             <Box display="flex" alignItems="flex-end" mb={2}>
               <Typography variant="h3" lineHeight="100%">
                 Ended Auctions

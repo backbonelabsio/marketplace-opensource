@@ -71,7 +71,7 @@ const InputNonLuna = ({ onChange, value, denom }: { onChange: (val) => any, valu
 )
 
 export const CurrencyInput = ({ onChange, value, denom }: { onChange: (val) => any, value: any, denom: string }) => (
-  <Box width="100%">
+  <Box width={100}>
     {
       denom == 'uluna'
       ? <InputLuna onChange={onChange} value={value} />

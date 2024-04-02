@@ -89,8 +89,8 @@ export const SellMyNftPage = () => {
             <Image
               src={formatImageURL(nft?.extension?.image)}
               alt="NFT"
-              width="100%"
-              height="100%"
+              width={100}
+              height={100}
               layout="responsive"
               objectFit="contain"
             />

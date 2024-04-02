@@ -36,6 +36,7 @@ cosmwasm-storage = { version = "1.0.0" }
 schemars = "0.8.1"
 serde = { version = "1.0.137", default-features = false, features = ["derive"] }
 cw721 = { version = "0.13.2", git = "https://github.com/CosmWasm/cw-nfts", commit = "4e26419bb02f4b871fda487964a80bd419207428" }
+cw20 = { version = "0.13.2" }
 
 [dev-dependencies]
 cosmwasm-schema = { version = "1.0.0" }

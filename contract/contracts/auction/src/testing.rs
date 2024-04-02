@@ -1,6 +1,6 @@
 use cosmwasm_std::testing::{mock_env, mock_info, MOCK_CONTRACT_ADDR};
 use cosmwasm_std::{
-    from_binary, to_binary, Addr, Api, BankMsg, CanonicalAddr, Coin, CosmosMsg, Decimal, DepsMut,
+    from_binary, to_json_binary, Addr, Api, BankMsg, CanonicalAddr, Coin, CosmosMsg, Decimal, DepsMut,
     Env, Order, Querier, StdError, Storage, Timestamp, Uint128, WasmMsg,
 };
 use cw721::{Cw721ExecuteMsg, Cw721ReceiveMsg};
@@ -132,7 +132,7 @@ fn create_buynow() {
     let nft_receive_msg = Cw721ReceiveMsg {
         sender: "satoshi".into(),
         token_id: "bitcoin".to_string(),
-        msg: to_binary(&Cw721HookMsg::CreateAuction {
+        msg: to_json_binary(&Cw721HookMsg::CreateAuction {
             denom: "uluna".to_string(),
             reserve_price: Uint128::from(1_000000u128),
             is_instant_sale: true,
@@ -194,7 +194,7 @@ fn create_buynow() {
     let nft_receive_msg = Cw721ReceiveMsg {
         sender: "satoshi".into(),
         token_id: "rock".to_string(),
-        msg: to_binary(&Cw721HookMsg::CreateAuction {
+        msg: to_json_binary(&Cw721HookMsg::CreateAuction {
             denom: "uluna".to_string(),
             reserve_price: Uint128::from(10u128),
             is_instant_sale: false,
@@ -215,7 +215,7 @@ fn create_buynow() {
     let nft_receive_msg = Cw721ReceiveMsg {
         sender: "satoshi".into(),
         token_id: "rock".to_string(),
-        msg: to_binary(&Cw721HookMsg::CreateAuction {
+        msg: to_json_binary(&Cw721HookMsg::CreateAuction {
             denom: "uthb".to_string(),
             reserve_price: Uint128::from(10u128),
             is_instant_sale: false,
@@ -244,7 +244,7 @@ fn create_auction() {
     let nft_receive_msg = Cw721ReceiveMsg {
         sender: "satoshi".into(),
         token_id: "bitcoin".to_string(),
-        msg: to_binary(&Cw721HookMsg::CreateAuction {
+        msg: to_json_binary(&Cw721HookMsg::CreateAuction {
             denom: "uluna".to_string(),
             reserve_price: Uint128::from(1_000000u128),
             is_instant_sale: false,
@@ -313,7 +313,7 @@ fn settle_buynow() {
     let nft_receive_msg = Cw721ReceiveMsg {
         sender: "satoshi".into(),
         token_id: "bitcoin".to_string(),
-        msg: to_binary(&Cw721HookMsg::CreateAuction {
+        msg: to_json_binary(&Cw721HookMsg::CreateAuction {
             denom: "uluna".to_string(),
             reserve_price: Uint128::from(1_000000u128),
             is_instant_sale: true,
@@ -418,7 +418,7 @@ fn settle_buynow() {
         &send_nft_msg.msg,
         &CosmosMsg::Wasm(WasmMsg::Execute {
             contract_addr: "nft".into(),
-            msg: to_binary(&Cw721ExecuteMsg::TransferNft {
+            msg: to_json_binary(&Cw721ExecuteMsg::TransferNft {
                 token_id: "bitcoin".to_string(),
                 recipient: "buyer".into()
             })
@@ -432,7 +432,7 @@ fn settle_buynow() {
         &settle_hook_msg.msg,
         &CosmosMsg::Wasm(WasmMsg::Execute {
             contract_addr: MOCK_CONTRACT_ADDR.into(),
-            msg: to_binary(&ExecuteMsg::SettleHook {
+            msg: to_json_binary(&ExecuteMsg::SettleHook {
                 nft_contract: "nft".to_string(),
                 token_id: "bitcoin".to_string(),
                 owner: "buyer".to_string()
@@ -508,7 +508,7 @@ fn settle_buynow_with_royalty() {
     let nft_receive_msg = Cw721ReceiveMsg {
         sender: "satoshi".into(),
         token_id: "bitcoin".to_string(),
-        msg: to_binary(&Cw721HookMsg::CreateAuction {
+        msg: to_json_binary(&Cw721HookMsg::CreateAuction {
             denom: "uluna".to_string(),
             reserve_price: Uint128::from(1_000000u128),
             is_instant_sale: true,
@@ -622,7 +622,7 @@ fn settle_buynow_with_royalty() {
         &send_nft_msg.msg,
         &CosmosMsg::Wasm(WasmMsg::Execute {
             contract_addr: "nft".into(),
-            msg: to_binary(&Cw721ExecuteMsg::TransferNft {
+            msg: to_json_binary(&Cw721ExecuteMsg::TransferNft {
                 token_id: "bitcoin".to_string(),
                 recipient: "buyer".into()
             })
@@ -636,7 +636,7 @@ fn settle_buynow_with_royalty() {
         &settle_hook_msg.msg,
         &CosmosMsg::Wasm(WasmMsg::Execute {
             contract_addr: MOCK_CONTRACT_ADDR.into(),
-            msg: to_binary(&ExecuteMsg::SettleHook {
+            msg: to_json_binary(&ExecuteMsg::SettleHook {
                 nft_contract: "nft".to_string(),
                 token_id: "bitcoin".to_string(),
                 owner: "buyer".to_string()
@@ -722,7 +722,7 @@ fn settle_auction() {
     let nft_receive_msg = Cw721ReceiveMsg {
         sender: "satoshi".into(),
         token_id: "bitcoin".to_string(),
-        msg: to_binary(&Cw721HookMsg::CreateAuction {
+        msg: to_json_binary(&Cw721HookMsg::CreateAuction {
             denom: "uluna".to_string(),
             reserve_price: Uint128::from(1_000000u128),
             is_instant_sale: false,
@@ -909,7 +909,7 @@ fn settle_auction() {
         &send_nft_msg.msg,
         &CosmosMsg::Wasm(WasmMsg::Execute {
             contract_addr: "nft".into(),
-            msg: to_binary(&Cw721ExecuteMsg::TransferNft {
+            msg: to_json_binary(&Cw721ExecuteMsg::TransferNft {
                 token_id: "bitcoin".to_string(),
                 recipient: "buyer".into()
             })
@@ -923,7 +923,7 @@ fn settle_auction() {
         &settle_hook_msg.msg,
         &CosmosMsg::Wasm(WasmMsg::Execute {
             contract_addr: MOCK_CONTRACT_ADDR.into(),
-            msg: to_binary(&ExecuteMsg::SettleHook {
+            msg: to_json_binary(&ExecuteMsg::SettleHook {
                 nft_contract: "nft".to_string(),
                 token_id: "bitcoin".to_string(),
                 owner: "buyer".to_string()
@@ -981,7 +981,7 @@ fn check_freeze_and_cancel_auction() {
     let nft_receive_msg = Cw721ReceiveMsg {
         sender: "satoshi".into(),
         token_id: "bitcoin".to_string(),
-        msg: to_binary(&Cw721HookMsg::CreateAuction {
+        msg: to_json_binary(&Cw721HookMsg::CreateAuction {
             denom: "uluna".to_string(),
             reserve_price: Uint128::from(1_000000u128),
             is_instant_sale: true,
@@ -997,7 +997,7 @@ fn check_freeze_and_cancel_auction() {
     let nft_receive_msg = Cw721ReceiveMsg {
         sender: "vitalik".into(),
         token_id: "ethereum".to_string(),
-        msg: to_binary(&Cw721HookMsg::CreateAuction {
+        msg: to_json_binary(&Cw721HookMsg::CreateAuction {
             denom: "uluna".to_string(),
             reserve_price: Uint128::from(1_000000u128),
             is_instant_sale: true,
@@ -1033,7 +1033,7 @@ fn check_freeze_and_cancel_auction() {
     let nft_receive_msg = Cw721ReceiveMsg {
         sender: "charles".into(),
         token_id: "cardano".to_string(),
-        msg: to_binary(&Cw721HookMsg::CreateAuction {
+        msg: to_json_binary(&Cw721HookMsg::CreateAuction {
             denom: "uluna".to_string(),
             reserve_price: Uint128::from(1_000000u128),
             is_instant_sale: true,
@@ -1083,7 +1083,7 @@ fn check_freeze_and_cancel_auction() {
         &send_nft_msg.msg,
         &CosmosMsg::Wasm(WasmMsg::Execute {
             contract_addr: "nft".into(),
-            msg: to_binary(&Cw721ExecuteMsg::TransferNft {
+            msg: to_json_binary(&Cw721ExecuteMsg::TransferNft {
                 token_id: "bitcoin".to_string(),
                 recipient: "satoshi".into()
             })
@@ -1097,7 +1097,7 @@ fn check_freeze_and_cancel_auction() {
         &settle_hook_msg.msg,
         &CosmosMsg::Wasm(WasmMsg::Execute {
             contract_addr: MOCK_CONTRACT_ADDR.into(),
-            msg: to_binary(&ExecuteMsg::SettleHook {
+            msg: to_json_binary(&ExecuteMsg::SettleHook {
                 nft_contract: "nft".to_string(),
                 token_id: "bitcoin".to_string(),
                 owner: "satoshi".to_string()
@@ -1141,7 +1141,7 @@ fn admin_cancel() {
     let nft_receive_msg = Cw721ReceiveMsg {
         sender: "satoshi".into(),
         token_id: "bitcoin".to_string(),
-        msg: to_binary(&Cw721HookMsg::CreateAuction {
+        msg: to_json_binary(&Cw721HookMsg::CreateAuction {
             denom: "uluna".to_string(),
             reserve_price: Uint128::from(1_000000u128),
             is_instant_sale: true,
@@ -1175,7 +1175,7 @@ fn admin_cancel() {
         &send_nft_msg.msg,
         &CosmosMsg::Wasm(WasmMsg::Execute {
             contract_addr: "nft".into(),
-            msg: to_binary(&Cw721ExecuteMsg::TransferNft {
+            msg: to_json_binary(&Cw721ExecuteMsg::TransferNft {
                 token_id: "bitcoin".to_string(),
                 recipient: "satoshi".into()
             })
@@ -1189,7 +1189,7 @@ fn admin_cancel() {
     let nft_receive_msg = Cw721ReceiveMsg {
         sender: "satoshi".into(),
         token_id: "bitcoin".to_string(),
-        msg: to_binary(&Cw721HookMsg::CreateAuction {
+        msg: to_json_binary(&Cw721HookMsg::CreateAuction {
             denom: "uluna".to_string(),
             reserve_price: Uint128::from(1_000000u128),
             is_instant_sale: false,
@@ -1241,7 +1241,7 @@ fn admin_cancel() {
         &send_nft_msg.msg,
         &CosmosMsg::Wasm(WasmMsg::Execute {
             contract_addr: "nft".into(),
-            msg: to_binary(&Cw721ExecuteMsg::TransferNft {
+            msg: to_json_binary(&Cw721ExecuteMsg::TransferNft {
                 token_id: "bitcoin".to_string(),
                 recipient: "satoshi".into()
             })

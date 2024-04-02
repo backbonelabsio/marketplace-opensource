@@ -17,7 +17,7 @@ export const EmptyState = () => {
       flexDirection="column"
       alignItems="center"
       justifyContent="center"
-      width="100%"
+      width={100}
     >
       <Image
         src="/static/images/empty_state_logo.png"

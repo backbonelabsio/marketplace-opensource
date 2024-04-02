@@ -36,7 +36,7 @@ export const BaseButton = ({ children }: { children: any }) => {
       display="flex"
       justifyContent="center"
       alignItems="center"
-      width="100%"
+      width={100}
       className={classes.baseButton}
     >
       {children}

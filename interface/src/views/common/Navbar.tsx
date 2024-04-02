@@ -171,7 +171,7 @@ export const Navbar = observer((props: Props) => {
                   ) : (
                     <Link href="/" passHref>
                       <Box component="a" display="flex">
-                        <Image src="/static/images/logo.png" width={162} height={35} />
+                        <Image src="/static/images/logo.png" alt="" width={162} height={35} />
                       </Box>
                     </Link>
                   )}

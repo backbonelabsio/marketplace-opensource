@@ -44,7 +44,7 @@ export const TabPanel = (props: TabPanelProps) => {
   const { children, value, index, ...other } = props
 
   return (
-    <Box role="tabpanel" width="100%" hidden={value !== index} {...other}>
+    <Box role="tabpanel" width={100} hidden={value !== index} {...other}>
       {value === index && <Box>{children}</Box>}
     </Box>
   )

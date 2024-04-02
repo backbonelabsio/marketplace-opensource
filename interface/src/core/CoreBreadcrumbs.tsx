@@ -33,7 +33,7 @@ export const CoreBreadcrumbs = (props: Props) => {
         if (url) {
           return (
             <Link href={url} key={index}>
-              <a>{labelEl}</a>
+              {/*<a>{labelEl}</a>*/}
             </Link>
           )
         }
